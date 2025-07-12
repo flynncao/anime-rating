@@ -6,17 +6,18 @@
   "author": "Flynn Cao",
   "license": "MIT",
   "keywords": [],
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint",
     "lint:fix": "eslint --fix"
   },
   "dependencies": {
     "dotenv": "^16.5.0",
-    "got": "^14.4.7",
-    "koa": "^3.0.0",
-    "koa-router": "^13.0.1"
+    "express": "^5.1.0",
+    "got": "^14.4.7"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.15.0",

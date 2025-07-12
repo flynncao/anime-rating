@@ -1,23 +1,19 @@
-import Koa from 'koa'
-import Router from 'koa-router'
+import express from 'express'
 import { getAnimeDetails, searchAnime } from './api/MAL.js'
+import 'dotenv/config'
 
-const app = new Koa()
+const app = express()
 
-// Create a Koa route to handle requests, input by user or element: japanese title, router should be able to handle GET requests and the url is "/search?title=進撃の巨人", should be ascynchronous because later I will call another API if the title is successfully fetched, using koa-router
-const router = new Router()
-// base router /
-router.get('/', (ctx) => {
-  ctx.body = 'Welcome to the Anime Search API! Use /search?title=YOUR_TITLE to search for anime.'
+app.get('/', (req, res) => {
+  res.send('Welcome to the Anime Search API! Use /search?title=YOUR_TITLE to search for anime.')
 })
 
-router.get('/search', async (ctx) => {
-  console.log('ctx.query', ctx.query)
-  const title = ctx.query.title
+app.get('/search', async (req, res) => {
+  console.log('req.query', req.query)
+  const title = req.query.title
 
   if (!title) {
-    ctx.status = 400
-    ctx.body = 'Title query parameter is required'
+    res.status(400).send('Title query parameter is required')
     return
   }
   try {
@@ -25,23 +21,19 @@ router.get('/search', async (ctx) => {
 
     if (animeId) {
       const animeDetails = await getAnimeDetails(animeId)
-      ctx.body = animeDetails
+      res.json(animeDetails)
     }
     else {
-      ctx.status = 404
-      ctx.body = 'Anime not found'
+      res.status(404).send('Anime not found')
     }
   }
   catch (error) {
-    ctx.status = 500
-    ctx.body = 'Internal Server Error'
+    res.status(500).send('Internal Server Error')
     console.error('Error fetching anime details:', error)
   }
 })
 
-app.use(router.routes())
-app.use(router.allowedMethods())
-
-app.listen(3000, () => {
-  console.log('Server is running on http://localhost:3000')
+const port = process.env.PORT || 3000
+app.listen(port, () => {
+  console.log(`Server is running on http://localhost:${port}`)
 })
