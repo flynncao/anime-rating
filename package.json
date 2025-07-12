@@ -1,6 +1,5 @@
 {
   "name": "anime-rating",
-  "type": "module",
   "version": "1.0.0",
   "description": "",
   "author": "Flynn Cao",
@@ -12,7 +11,9 @@
     "dev": "nodemon src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "eslint",
-    "lint:fix": "eslint --fix"
+    "lint:fix": "eslint --fix",
+    "build": "esbuild src/index.js --bundle --outfile=dist/index.js --minify --target=node20 --platform=node",
+    "watch": "esbuild src/index.js --bundle --outfile=dist/index.js --minify --target=node20 --platform=node --watch"
   },
   "dependencies": {
     "dotenv": "^16.5.0",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.15.0",
+    "esbuild": "0.25.6",
     "eslint": "^9.29.0"
   }
 }
