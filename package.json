@@ -1,7 +1,7 @@
 {
   "name": "anime-rating-monorepo",
-  "version": "1.0.0",
   "type": "module",
+  "version": "1.0.0",
   "private": true,
   "description": "Anime rating search application monorepo with frontend and backend",
   "author": "Flynn Cao",
@@ -14,6 +14,10 @@
     "typescript",
     "monorepo"
   ],
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "pnpm --parallel --stream run dev",
     "dev:server": "pnpm --filter server dev",
@@ -36,15 +40,12 @@
     "@eslint/json": "^0.14.0",
     "@eslint/markdown": "^7.5.1",
     "@types/node": "^24.10.0",
+    "@unocss/eslint-plugin": "^66.5.4",
     "eslint": "^9.39.1",
     "eslint-plugin-vue": "^10.5.1",
     "globals": "^16.5.0",
     "rimraf": "^6.0.1",
     "typescript": "5.3.3",
     "typescript-eslint": "^8.46.3"
-  },
-  "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=9.0.0"
   }
 }

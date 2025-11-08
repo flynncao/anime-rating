@@ -1,12 +1,12 @@
-import cors from 'cors'
-import { getAnimeDetails, searchAnime } from './api/MAL.js'  
+import type { Request, Response } from 'express'
 import type { AnimeDetails, ApiError } from './types/index.js'
-import express, { type Request, type Response } from 'express'
+import cors from 'cors'
+import express from 'express'
+import { getAnimeDetails, searchAnime } from './api/MAL.js'
 import 'dotenv/config'
 
-   
 const app = express()
-   
+
 // Enable CORS for frontend
 app.use(cors({
   origin: 'http://localhost:5173',

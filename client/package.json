@@ -1,8 +1,8 @@
 {
   "name": "client",
+  "type": "module",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "description": "Frontend Vue app for anime rating search",
   "scripts": {
     "dev": "vite",

@@ -1,5 +1,5 @@
-import express from 'express'
 import cors from 'cors'
+import express from 'express'
 import { getAnimeDetails, searchAnime } from './api/MAL.js'
 import 'dotenv/config'
 

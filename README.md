@@ -65,7 +65,7 @@ anime-rating/
    ```
 
 3. **Set up environment variables**
-   
+
    Create a `.env` file in the root directory:
    ```env
    MAL_ACCESS_TOKEN=your_myanimelist_api_token_here
@@ -140,7 +140,7 @@ pnpm run type-check:client
 - **Type-Safe Development**: Full TypeScript coverage on both frontend and backend
 - **Search Interface**: Type any anime title and press Enter or click Search
 - **Beautiful UI**: Modern gradient design with responsive layout
-- **Detailed Information**: 
+- **Detailed Information**:
   - Anime cover image
   - Titles (English, Japanese, Romaji)
   - Scores and rankings

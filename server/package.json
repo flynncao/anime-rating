@@ -1,12 +1,12 @@
 {
   "name": "server",
+  "type": "module",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
   "description": "Backend API server for anime rating search",
   "main": "index.ts",
   "scripts": {
-    "dev": "tsx watch index.ts",
+    "dev": "tsx --watch index.ts",
     "start": "tsx index.ts",
     "build": "tsc -p tsconfig.json",
     "type-check": "tsc --noEmit",
