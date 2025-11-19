@@ -2,6 +2,12 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "rootDir": ".",
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
     "outDir": "./dist"
-  }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx"
+  ]
 }

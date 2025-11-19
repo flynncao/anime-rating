@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "composite": true,
     "target": "ES6",
     "lib": [
       "ESNext",
@@ -19,13 +20,12 @@
     "noUncheckedIndexedAccess": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noEmit": true,
+    "noEmit": false,
     "outDir": "build",
     "removeComments": true,
     "esModuleInterop": true,
     "isolatedModules": true
   },
-  "include": ["./**/*.ts"],
   "exclude": [
     "node_modules/**/*"
   ]
