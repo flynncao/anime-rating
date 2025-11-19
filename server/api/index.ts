@@ -1,19 +1,20 @@
+import type { Request, Response } from 'express'
+import type { AnimeDetails, ApiError } from '../types/index.js'
 import cors from 'cors'
 import express from 'express'
-import { getAnimeDetails, searchAnime } from './api/MAL.js'
-import 'dotenv/config'
+import { getAnimeDetails, searchAnime } from './MAL.js'
 
 const app = express()
 
-// Enable CORS for frontend
+// Enable CORS for production - update this with your actual frontend URL
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }))
 
 app.use(express.json())
 
-app.get('/', (req, res) => {
+app.get('/', (_req: Request, res: Response) => {
   res.json({
     message: 'Welcome to the Anime Search API!',
     endpoints: {
@@ -22,8 +23,8 @@ app.get('/', (req, res) => {
   })
 })
 
-app.get('/api/search', async (req, res) => {
-  const title = req.query.title
+app.get('/api/search', async (req: Request, res: Response<AnimeDetails | ApiError>) => {
+  const title = req.query.title as string | undefined
 
   if (!title) {
     res.status(400).json({ error: 'Title query parameter is required' })
@@ -34,7 +35,12 @@ app.get('/api/search', async (req, res) => {
 
     if (animeId) {
       const animeDetails = await getAnimeDetails(animeId)
-      res.json(animeDetails)
+      if (animeDetails) {
+        res.json(animeDetails)
+      }
+      else {
+        res.status(404).json({ error: 'Anime details not found' })
+      }
     }
     else {
       res.status(404).json({ error: 'Anime not found' })
@@ -46,8 +52,4 @@ app.get('/api/search', async (req, res) => {
   }
 })
 
-const port = process.env.PORT || 3000
-app.listen(port, () => {
-  console.info(`🚀 Backend server is running on http://localhost:${port}`)
-  console.info(`📡 API endpoint: http://localhost:${port}/api/search?title=YOUR_TITLE`)
-})
+export default app

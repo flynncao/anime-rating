@@ -1,0 +1,15 @@
+[build]
+base = "client"
+publish = "dist"
+command = "npm run build:client"
+
+[build.environment]
+NODE_VERSION = "22"
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+[context.production.environment]
+VITE_API_URL = "https://your-vercel-backend.vercel.app"

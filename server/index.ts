@@ -9,7 +9,9 @@ const app = express()
 
 // Enable CORS for frontend
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.FRONTEND_URL || 'https://your-netlify-frontend.netlify.app'
+    : 'http://localhost:5173',
   credentials: true,
 }))
 

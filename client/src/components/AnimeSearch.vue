@@ -41,7 +41,8 @@ const searchAnime = async () => {
   animeData.value = null
 
   try {
-    const response = await axios.get<AnimeDetails>('/api/search', {
+    const apiUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : ''
+    const response = await axios.get<AnimeDetails>(`${apiUrl}/api/search`, {
       params: { title: searchTitle.value }
     })
     animeData.value = response.data
