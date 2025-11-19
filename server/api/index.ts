@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express'
-import type { AnimeDetails, ApiError } from '../types/index.ts'
+import type { AnimeDetails, ApiError } from '../types/index.js'
 import cors from 'cors'
 import express from 'express'
-import { getAnimeDetails, searchAnime } from './MAL.ts'
+import { getAnimeDetails, searchAnime } from './MAL.js'
 import 'dotenv/config'
 
 const app = express()

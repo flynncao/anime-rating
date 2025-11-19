@@ -4,10 +4,10 @@
   "version": "1.0.0",
   "private": true,
   "description": "Backend API server for anime rating search",
-  "main": "index.ts",
+  "main": "api/index.ts",
   "scripts": {
-    "dev": "tsx --watch index.ts",
-    "start": "tsx index.ts",
+    "dev": "tsx --watch api/index.ts",
+    "start": "tsx api/index.ts",
     "build": "tsc -p tsconfig.json",
     "type-check": "tsc --noEmit",
     "clean": "rimraf dist"
