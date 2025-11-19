@@ -7,31 +7,124 @@ import 'dotenv/config'
 
 const app = express()
 
-// Enable CORS for frontend
-const corsOrigins = [
-  'http://localhost:5173',
-  'http://localhost:4173',
-  'https://bright-valkyrie-013088.netlify.app/',
-  'https://anime-age-rating-server.vercel.app',
-  'https://*.vercel.app',
-  'https://*.netlify.app',
-]
+// CORS debugging middleware
+app.use((req, res, next) => {
+  console.log('🔍 CORS Debug - Request:', {
+    origin: req.headers.origin,
+    method: req.method,
+    url: req.url,
+    headers: req.headers,
+  })
+  next()
+})
 
-// Add FRONTEND_URL from environment if it exists
-if (process.env.FRONTEND_URL) {
-  corsOrigins.unshift(process.env.FRONTEND_URL)
-}
-
+// Enable CORS for frontend - VERY PERMISSIVE FOR DEBUGGING
 app.use(cors({
-  origin: corsOrigins,
+  origin(origin, callback) {
+    console.log('🌐 CORS Origin Check:', origin)
+
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) {
+      console.log('📍 No origin header - allowing')
+      return callback(null, true)
+    }
+
+    // List of allowed origins - VERY PERMISSIVE
+    const allowedOrigins = [
+      // Local development
+      'http://localhost:5173',
+      'http://localhost:4173',
+      'https://localhost:5173',
+      'https://localhost:4173',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:4173',
+
+      // Known production URLs
+      'https://your-netlify-frontend.netlify.app',
+      'https://anime-age-rating-server.vercel.app',
+
+      // Allow any Netlify subdomain
+      /\.netlify\.app$/,
+      /^https:\/\/.*\.netlify\.app$/,
+
+      // Allow any Vercel subdomain
+      /\.vercel\.app$/,
+      /^https:\/\/.*\.vercel\.app$/,
+
+      // Allow any localhost subdomain
+      /localhost/,
+      /127\.0\.0\.1/,
+    ]
+
+    // Check if origin matches any allowed pattern
+    const isAllowed = allowedOrigins.some((allowed) => {
+      if (typeof allowed === 'string') {
+        return origin === allowed
+      }
+      if (allowed instanceof RegExp) {
+        return allowed.test(origin)
+      }
+      return false
+    })
+
+    console.log('✅ CORS Check Result:', { origin, isAllowed })
+
+    if (isAllowed) {
+      callback(null, true)
+    }
+    else {
+      console.log('❌ CORS Blocked Origin:', origin)
+      // For now, allow anyway with a warning (REMOVE THIS IN PRODUCTION!)
+      console.log('⚠️  WARNING: Allowing blocked origin for debugging - REMOVE THIS!')
+      callback(null, true)
+      // In production, use this instead:
+      // callback(new Error(`CORS: Origin ${origin} not allowed`), false)
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-Key', 'Origin', 'Accept', 'Access-Control-Request-Method', 'Access-Control-Request-Headers', 'Cache-Control', 'Pragma'],
+  exposedHeaders: ['X-Total-Count', 'X-Page-Size', 'X-Requested-With'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+  maxAge: 86400, // 24 hours
 }))
 
-// Handle preflight requests explicitly
-app.options('*', cors())
+// Handle preflight requests explicitly for ALL routes
+app.options('*', (req, res) => {
+  console.log('🚀 OPTIONS Preflight Request:', req.headers.origin)
+  res.sendStatus(204)
+})
+
+// Add manual CORS headers as fallback
+app.use((req, res, next) => {
+  const origin = req.headers.origin
+  if (origin) {
+    res.header('Access-Control-Allow-Origin', origin)
+    res.header('Access-Control-Allow-Credentials', 'true')
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-API-Key, Origin, Accept, Access-Control-Request-Method, Access-Control-Request-Headers')
+    res.header('Access-Control-Expose-Headers', 'X-Total-Count, X-Page-Size')
+    res.header('Access-Control-Max-Age', '86400')
+  }
+  next()
+})
+
+// CORS error handler
+app.use((err: any, req: Request, res: Response, next: any) => {
+  if (err.message && err.message.includes('CORS')) {
+    console.error('🚨 CORS Error:', err.message)
+    res.status(403).json({
+      error: 'CORS Error',
+      message: err.message,
+      origin: req.headers.origin,
+      allowedOrigins: corsOrigins,
+    })
+  }
+  else {
+    next(err)
+  }
+})
 
 app.use(express.json())
 

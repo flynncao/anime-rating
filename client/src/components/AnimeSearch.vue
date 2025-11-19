@@ -41,18 +41,40 @@ const searchAnime = async () => {
   animeData.value = null
 
   try {
-    const apiUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : 'http://localhost:3000'
-    const response = await axios.get<AnimeDetails>(`${apiUrl}/api/search`, {
+    // Use relative URL in development (Vite proxy will handle it)
+    // Use absolute URL in production
+    const apiUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : ''
+    const fullUrl = `${apiUrl}/api/search`
+    
+    console.log('🚀 Making request to:', fullUrl)
+    console.log('📍 Environment:', import.meta.env.PROD ? 'production' : 'development')
+    
+    const response = await axios.get<AnimeDetails>(fullUrl, {
       params: { title: searchTitle.value },
       withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
-      }
+        'Accept': 'application/json',
+      },
+      timeout: 10000 // 10 second timeout
     })
+    
+    console.log('✅ Response received:', response.status)
     animeData.value = response.data
   } catch (err: any) {
-    error.value = err.response?.data?.error || err.message || 'Failed to fetch anime data. Please try again.'
-    console.error('Error:', err)
+    console.error('❌ Error details:', err)
+    console.error('❌ Error response:', err.response)
+    console.error('❌ Error request:', err.request)
+    
+    if (err.code === 'ERR_NETWORK') {
+      error.value = 'Network error - CORS or connectivity issue. Check console for details.'
+    } else if (err.response) {
+      error.value = err.response.data?.error || `Server error: ${err.response.status} ${err.response.statusText}`
+    } else if (err.request) {
+      error.value = 'No response from server - CORS or network issue'
+    } else {
+      error.value = err.message || 'Failed to fetch anime data. Please try again.'
+    }
   } finally {
     loading.value = false
   }
