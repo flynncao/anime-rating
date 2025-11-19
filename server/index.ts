@@ -8,12 +8,30 @@ import 'dotenv/config'
 const app = express()
 
 // Enable CORS for frontend
+const corsOrigins = [
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'https://bright-valkyrie-013088.netlify.app/',
+  'https://anime-age-rating-server.vercel.app',
+  'https://*.vercel.app',
+  'https://*.netlify.app',
+]
+
+// Add FRONTEND_URL from environment if it exists
+if (process.env.FRONTEND_URL) {
+  corsOrigins.unshift(process.env.FRONTEND_URL)
+}
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || 'https://your-netlify-frontend.netlify.app'
-    : 'http://localhost:5173',
+  origin: corsOrigins,
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200,
 }))
+
+// Handle preflight requests explicitly
+app.options('*', cors())
 
 app.use(express.json())
 

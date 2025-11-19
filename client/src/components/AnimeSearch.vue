@@ -41,13 +41,17 @@ const searchAnime = async () => {
   animeData.value = null
 
   try {
-    const apiUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : ''
+    const apiUrl = import.meta.env.PROD ? import.meta.env.VITE_API_URL : 'http://localhost:3000'
     const response = await axios.get<AnimeDetails>(`${apiUrl}/api/search`, {
-      params: { title: searchTitle.value }
+      params: { title: searchTitle.value },
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+      }
     })
     animeData.value = response.data
   } catch (err: any) {
-    error.value = err.response?.data || 'Failed to fetch anime data. Please try again.'
+    error.value = err.response?.data?.error || err.message || 'Failed to fetch anime data. Please try again.'
     console.error('Error:', err)
   } finally {
     loading.value = false
