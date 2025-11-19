@@ -1,8 +1,8 @@
 import type { Request, Response } from 'express'
-import type { AnimeDetails, ApiError } from './types/index.js'
+import type { AnimeDetails, ApiError } from './types/index.ts'
 import cors from 'cors'
 import express from 'express'
-import { getAnimeDetails, searchAnime } from './api/MAL.js'
+import { getAnimeDetails, searchAnime } from './api/MAL.ts'
 import 'dotenv/config'
 
 const app = express()
@@ -118,7 +118,6 @@ app.use((err: any, req: Request, res: Response, next: any) => {
       error: 'CORS Error',
       message: err.message,
       origin: req.headers.origin,
-      allowedOrigins: corsOrigins,
     })
   }
   else {
