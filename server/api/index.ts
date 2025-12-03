@@ -217,6 +217,31 @@ app.get('/api/anime-ids/:bgmId', (req: Request, res: Response) => {
   })
 })
 
+app.get('/api/animeDetailFromBgm/:bgmId', async (req: Request, res: Response<AnimeDetails | ApiError>) => {
+  const { bgmId } = req.params
+  const animeMap = getAnimeMapData()
+
+  if (!animeMap) {
+    res.status(503).json({ error: 'Anime map data not available' })
+    return
+  }
+
+  const animeData = animeMap[bgmId!]
+
+  if (!animeData || !animeData.mal_id) {
+    res.status(404).json({ error: `No anime data found with Bangumi ID: ${bgmId}` })
+    return
+  }
+
+  const animeDetail = await getAnimeDetails(Number.parseInt(animeData.mal_id))
+
+  if (animeDetail) {
+    res.json(animeDetail)
+  }
+  else {
+    res.status(404).json({ error: 'Anime details not found' })
+  }
+})
 app.get('/api/animeDetail', async (req: Request, res: Response<AnimeDetails | ApiError>) => {
   const idParam = req.query.id as string | undefined
   // Bangumi id must be provided
