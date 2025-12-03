@@ -4,6 +4,7 @@ import cors from 'cors'
 import express from 'express'
 import { getAnimeDetails, searchAnime } from './MAL.js'
 import 'dotenv/config'
+import { initializeDataFetcher, isDataReady, getDataFetcherState, getAnimeMapData, refreshAnimeMap } from '../utils/dataFetcher.js'
 
 const app = express()
 
@@ -127,13 +128,95 @@ app.use((err: any, req: Request, res: Response, next: any) => {
 
 app.use(express.json())
 
+// Middleware: Block all API requests until anime_map.json is loaded
+app.use((req: Request, res: Response, next: any) => {
+  // Allow health check and data status endpoints
+  if (req.path === '/' || req.path === '/api/data-status' || req.path === '/health') {
+    return next()
+  }
+
+  // Block all other requests if data is not ready
+  if (!isDataReady()) {
+    console.warn('⏳ Request blocked: Data not ready yet')
+    res.status(503).json({
+      error: 'Service Unavailable',
+      message: 'Server is initializing. Please wait for anime_map.json to be fetched.',
+    })
+    return
+  }
+
+  next()
+})
+
 app.get('/', (_req: Request, res: Response) => {
   res.json({
     message: 'Welcome to the Anime Search API!',
     endpoints: {
       search: '/api/search?title=YOUR_TITLE',
+      searchList: '/api/searchList?title=YOUR_TITLE',
+      dataStatus: '/api/data-status',
+      health: '/health',
     },
   })
+})
+
+// Health check endpoint
+app.get('/health', (_req: Request, res: Response) => {
+  const state = getDataFetcherState()
+  res.json({
+    status: state.isReady ? 'healthy' : 'initializing',
+    dataReady: state.isReady,
+    lastFetch: state.lastFetch,
+    error: state.error?.message || null,
+  })
+})
+
+// Data status endpoint
+app.get('/api/data-status', (_req: Request, res: Response) => {
+  const state = getDataFetcherState()
+  const data = getAnimeMapData()
+  res.json({
+    isReady: state.isReady,
+    lastFetch: state.lastFetch,
+    error: state.error?.message || null,
+    dataSize: data ? Object.keys(data).length : 0,
+  })
+})
+
+// Manual refresh endpoint (optional, for debugging)
+app.post('/api/refresh-data', async (_req: Request, res: Response) => {
+  try {
+    await refreshAnimeMap()
+    res.json({ message: 'Data refreshed successfully', state: getDataFetcherState() })
+  }
+  catch (error) {
+    res.status(500).json({ error: 'Failed to refresh data', message: error instanceof Error ? error.message : String(error) })
+  }
+})
+
+app.get('/api/searchList', async (req: Request, res: Response<number[] | ApiError>) => {
+  const title = req.query.title as string | undefined
+  if (!title) {
+    res.status(400).json({ error: 'Title query parameter is required' })
+    return
+  } 
+  try {
+    const animeIds = await searchAnime(title, false)
+    if (animeIds) {
+      let animeDetailList: any[] = [];
+      animeDetailList = await Promise.all(
+        (animeIds as number[]).map(id => getAnimeDetails(id))
+      )
+      res.json(animeDetailList)
+    }
+    else {
+      res.status(404).json({ error: 'Anime not found' })
+    } 
+  }
+  catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' })
+    console.error('Error fetching anime IDs:', error)
+  }
 })
 
 app.get('/api/search', async (req: Request, res: Response<AnimeDetails | ApiError>) => {
@@ -144,8 +227,13 @@ app.get('/api/search', async (req: Request, res: Response<AnimeDetails | ApiErro
     return
   }
   try {
-    const animeId = await searchAnime(title)
-
+    const searchAnimeRes = await searchAnime(title, true)
+    let animeId: number | undefined | number[ ] = undefined
+    if(Object.hasOwnProperty.call(searchAnimeRes, 'length')) {
+      animeId = (searchAnimeRes as number[])[0]
+    }else {
+      animeId = searchAnimeRes as number | undefined
+    }
     if (animeId) {
       const animeDetails = await getAnimeDetails(animeId)
       if (animeDetails) {
@@ -165,8 +253,30 @@ app.get('/api/search', async (req: Request, res: Response<AnimeDetails | ApiErro
   }
 })
 
+// Initialize data fetcher before starting the server
 const port = process.env.PORT || 3000
-app.listen(port, () => {
-  console.info(`🚀 Backend server is running on http://localhost:${port}`)
-  console.info(`📡 API endpoint: http://localhost:${port}/api/search?title=YOUR_TITLE`)
-})
+
+async function startServer() {
+  try {
+    console.log('🔧 Starting server initialization...')
+    
+    // Initialize and fetch anime_map.json (this is blocking)
+    await initializeDataFetcher()
+    
+    // Only start the server after data is ready
+    app.listen(port, () => {
+      console.info(`🚀 Backend server is running on http://localhost:${port}`)
+      console.info(`📡 API endpoint: http://localhost:${port}/api/search?title=YOUR_TITLE`)
+      console.info(`💚 Server is ready to accept requests`)
+    })
+  }
+  catch (error) {
+    console.error('💥 FATAL ERROR: Failed to initialize server')
+    console.error(error)
+    console.error('⛔ Server cannot start without anime_map.json. Exiting...')
+    process.exit(1) // Exit the process if initialization fails
+  }
+}
+
+// Start the server
+startServer()
