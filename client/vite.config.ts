@@ -7,12 +7,8 @@ import { defineConfig, loadEnv } from 'vite'
 export default defineConfig(({ mode }) => {
   // Load env file based on mode (development/production)
   const env = loadEnv(mode, process.cwd(), '')
-
   // Determine backend URL based on environment
-  const backendUrl = mode === 'production'
-    ? env.VITE_API_URL || 'https://anime-age-rating-server.vercel.app'
-    : 'http://localhost:3000'
-
+  const backendUrl = env.VITE_API_URL || 'https://anime-age-rating-server.vercel.app'
   return {
     plugins: [
       vue(),

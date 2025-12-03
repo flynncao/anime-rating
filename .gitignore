@@ -131,3 +131,7 @@ out
 *.sublime-project
 .vscode
 *.code-workspace
+
+# build cache 
+build/
+dist/

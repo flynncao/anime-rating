@@ -2,7 +2,6 @@
 import { ref } from 'vue'
 import axios from 'axios'
 
-axios.defaults.headers.post['Access-Control-Allow-Origin'] = '*';
 axios.defaults.headers.post['Content-Type'] = 'application/json;charset=utf-8';
 
 interface AnimeDetails {
