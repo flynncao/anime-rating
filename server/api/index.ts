@@ -2,9 +2,9 @@ import type { Request, Response } from 'express'
 import type { AnimeDetails, ApiError } from '../types/index.js'
 import cors from 'cors'
 import express from 'express'
+import { getAnimeMapData, getDataFetcherState, initializeDataFetcher, isDataReady, refreshAnimeMap } from '../utils/dataFetcher.js'
 import { getAnimeDetails, searchAnime } from './MAL.js'
 import 'dotenv/config'
-import { initializeDataFetcher, isDataReady, getDataFetcherState, getAnimeMapData, refreshAnimeMap } from '../utils/dataFetcher.js'
 
 const app = express()
 
@@ -194,24 +194,74 @@ app.post('/api/refresh-data', async (_req: Request, res: Response) => {
   }
 })
 
+// Example endpoint: Get anime IDs from other platforms by Bangumi ID
+app.get('/api/anime-ids/:bgmId', (req: Request, res: Response) => {
+  const { bgmId } = req.params
+  const animeMap = getAnimeMapData()
+
+  if (!animeMap) {
+    res.status(503).json({ error: 'Anime map data not available' })
+    return
+  }
+
+  const animeData = animeMap[bgmId!]
+
+  if (!animeData) {
+    res.status(404).json({ error: `No anime found with Bangumi ID: ${bgmId}` })
+    return
+  }
+
+  res.json({
+    bgm_id: bgmId,
+    ...animeData,
+  })
+})
+
+app.get('/api/animeDetail', async (req: Request, res: Response<AnimeDetails | ApiError>) => {
+  const idParam = req.query.id as string | undefined
+  // Bangumi id must be provided
+  if (!idParam) {
+    res.status(400).json({ error: 'ID query parameter is required' })
+    return
+  }
+  // Read from /data/anime_map.json and check the correesponding MAL id
+  const animeMap = getAnimeMapData()
+  if (!animeMap) {
+    res.status(500).json({ error: 'Anime map data is not available' })
+    return
+  }
+  const id = animeMap[idParam]
+  const MALId = Number.parseInt(id)
+  try {
+    const animeDetails = await getAnimeDetails(MALId)
+    if (animeDetails) {
+      res.json(animeDetails)
+    }
+  }
+  catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' })
+    console.error('Error fetching anime details:', error)
+  }
+})
+
 app.get('/api/searchList', async (req: Request, res: Response<number[] | ApiError>) => {
   const title = req.query.title as string | undefined
   if (!title) {
     res.status(400).json({ error: 'Title query parameter is required' })
     return
-  } 
+  }
   try {
     const animeIds = await searchAnime(title, false)
     if (animeIds) {
-      let animeDetailList: any[] = [];
+      let animeDetailList: any[] = []
       animeDetailList = await Promise.all(
-        (animeIds as number[]).map(id => getAnimeDetails(id))
+        (animeIds as number[]).map(id => getAnimeDetails(id)),
       )
       res.json(animeDetailList)
     }
     else {
       res.status(404).json({ error: 'Anime not found' })
-    } 
+    }
   }
   catch (error) {
     res.status(500).json({ error: 'Internal Server Error' })
@@ -228,10 +278,11 @@ app.get('/api/search', async (req: Request, res: Response<AnimeDetails | ApiErro
   }
   try {
     const searchAnimeRes = await searchAnime(title, true)
-    let animeId: number | undefined | number[ ] = undefined
-    if(Object.hasOwnProperty.call(searchAnimeRes, 'length')) {
+    let animeId: number | undefined | number[ ]
+    if (Object.hasOwnProperty.call(searchAnimeRes, 'length')) {
       animeId = (searchAnimeRes as number[])[0]
-    }else {
+    }
+    else {
       animeId = searchAnimeRes as number | undefined
     }
     if (animeId) {
@@ -259,10 +310,10 @@ const port = process.env.PORT || 3000
 async function startServer() {
   try {
     console.log('🔧 Starting server initialization...')
-    
+
     // Initialize and fetch anime_map.json (this is blocking)
     await initializeDataFetcher()
-    
+
     // Only start the server after data is ready
     app.listen(port, () => {
       console.info(`🚀 Backend server is running on http://localhost:${port}`)

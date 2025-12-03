@@ -50,7 +50,7 @@ interface MALAnimeDetails {
   updated_at?: string
 }
 
-export async function searchAnime(title: string): Promise<number | null> {
+export async function searchAnime(title: string, unique: boolean = true, number?: number): Promise<number | number[] | undefined> {
   try {
     console.info('Searching for anime:', title)
     if (!process.env.MAL_ACCESS_TOKEN) {
@@ -60,30 +60,36 @@ export async function searchAnime(title: string): Promise<number | null> {
     const response = await gotInstance(`${BASE_URL}/anime`, {
       searchParams: {
         q: title,
-        limit: 4,
+        limit: 20,
       },
     })
 
     const data: MALSearchResponse = response.body ? JSON.parse(response.body) : {}
 
     if (data.data && data.data.length > 0) {
-      const animeId = data.data[0]?.node.id
-      if (animeId) {
-        console.info(`Anime ID for "${title}": ${animeId}`)
-        return animeId
+      let animeId: number | number[] | undefined
+
+      if (unique || data.data.length === 1) {
+        animeId = data.data[0]?.node.id
       }
+      else { 
+        // leverage number parameter to limit results
+        animeId = data.data.slice(0, number || data.data.length).map(item => item.node.id)
+      }
+      console.log('Found anime IDs:', animeId)
+      return animeId
     }
 
     console.warn(`No results found for "${title}"`)
-    return null
+    return undefined
   }
   catch (error) {
     console.error('Error fetching MyAnimeList data:', error)
-    return null
+    return undefined
   }
 }
 
-export async function getAnimeDetails(animeId: number): Promise<MALAnimeDetails | null> {
+export async function getAnimeDetails(animeId: number): Promise<MALAnimeDetails | undefined> {
   try {
     console.info('Fetching details for anime ID:', animeId)
     const response = await gotInstance(`${BASE_URL}/anime/${animeId}`, {
@@ -98,6 +104,6 @@ export async function getAnimeDetails(animeId: number): Promise<MALAnimeDetails 
   }
   catch (error) {
     console.error('Error fetching anime details:', error)
-    return null
+    return undefined
   }
 }

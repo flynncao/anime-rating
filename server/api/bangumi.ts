@@ -7,7 +7,7 @@ interface BangumiSearchResult {
   type: number
 }
 
-export async function searchBangumi(title: string): Promise<number | null> {
+export async function searchBangumi(title: string): Promise<number | undefined> {
   try {
     const URL = `https://api.bgm.tv/v0/search/subject?q=${encodeURIComponent(title)}`
     const response = await got(URL)
@@ -22,10 +22,10 @@ export async function searchBangumi(title: string): Promise<number | null> {
     }
 
     console.warn(`No results found for "${title}"`)
-    return null
+    return undefined
   }
   catch (error) {
     console.error('Error fetching Bangumi data:', error)
-    return null
+    return undefined
   }
 }
