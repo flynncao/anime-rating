@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import got from '../utils/got.js'
 import 'dotenv/config'
 
@@ -7,14 +9,78 @@ if (!process.env.MAL_ACCESS_TOKEN) {
   throw new Error('MAL_ACCESS_TOKEN is not set in environment variables')
 }
 
-// Extend the centralized got instance with MAL-specific configuration
-const gotInstance = got.extend({
-  headers: {
-    'User-Agent': 'MyAnimeList API Client',
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${process.env.MAL_ACCESS_TOKEN}`,
-  },
-})
+// Function to update environment variables and .env file
+async function updateAccessToken(newToken: string): Promise<void> {
+  // Update in-memory environment variable
+  process.env.MAL_ACCESS_TOKEN = newToken
+
+  // Update .env file if it exists and we're not in production
+  if (process.env.NODE_ENV !== 'production') {
+    try {
+      const envPath = path.join(process.cwd(), '.env')
+      if (fs.existsSync(envPath)) {
+        let envContent = fs.readFileSync(envPath, 'utf8')
+
+        // Replace or add MAL_ACCESS_TOKEN
+        if (envContent.includes('MAL_ACCESS_TOKEN=')) {
+          envContent = envContent.replace(
+            /MAL_ACCESS_TOKEN=.*/,
+            `MAL_ACCESS_TOKEN=${newToken}`,
+          )
+        }
+        else {
+          envContent += `\nMAL_ACCESS_TOKEN=${newToken}\n`
+        }
+
+        fs.writeFileSync(envPath, envContent, 'utf8')
+        console.log('Access token updated in .env file')
+      }
+    }
+    catch (error) {
+      console.warn('Could not update .env file:', error)
+    }
+  }
+}
+
+// Create a retryable got instance with 401 handling
+function createGotInstance() {
+  return got.extend({
+    headers: {
+      'User-Agent': 'MyAnimeList API Client',
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.MAL_ACCESS_TOKEN}`,
+    },
+    retry: {
+      limit: 2,
+      calculateDelay: ({ attemptCount, error }) => {
+        // Only retry on 401 errors
+        if (error.response?.statusCode === 401) {
+          return attemptCount === 1 ? 0 : -1 // Retry immediately once, then stop
+        }
+        return -1 // Don't retry other errors
+      },
+    },
+    hooks: {
+      beforeRetry: [
+        async (error, retryCount) => {
+          if (error.response?.statusCode === 401 && retryCount === 1) {
+            await refreshAccessToken()
+          }
+        },
+      ],
+      beforeError: [
+        (error) => {
+          // Only log errors here, no async operations
+          console.error('Request failed:', error.message)
+          return error
+        },
+      ],
+    },
+  })
+}
+
+// Initialize the got instance
+let gotInstance = createGotInstance()
 
 interface MALSearchResponse {
   data: Array<{
@@ -105,7 +171,15 @@ interface TokenResponse {
 export async function refreshAccessToken(): Promise<void> {
   console.info('Refreshing MyAnimeList access token')
 
-  const response = await gotInstance<TokenResponse>(`${BASE_URL}/oauth2/token`, {
+  // Use the base got instance without the 401 retry hook to avoid infinite loops
+  const refreshGotInstance = got.extend({
+    headers: {
+      'User-Agent': 'MyAnimeList API Client',
+      'Content-Type': 'application/json',
+    },
+  })
+
+  const response = await refreshGotInstance<TokenResponse>(`${BASE_URL}/oauth2/token`, {
     method: 'POST',
     searchParams: {
       client_id: process.env.MAL_CLIENT_ID,
@@ -117,10 +191,15 @@ export async function refreshAccessToken(): Promise<void> {
   const data = response.body
 
   if (data.access_token) {
-    process.env.MAL_ACCESS_TOKEN = data.access_token
+    await updateAccessToken(data.access_token)
+
+    // Recreate the got instance with the new token
+    gotInstance = createGotInstance()
+
     console.log('Access token refreshed successfully')
   }
   else {
     console.error('Error refreshing access token:', data)
+    throw new Error(`Failed to refresh access token: ${data.error || 'Unknown error'}`)
   }
 }

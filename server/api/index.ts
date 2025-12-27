@@ -256,11 +256,18 @@ app.get('/api/animeDetail', async (req: Request, res: Response<AnimeDetails | Ap
     return
   }
   const id = animeMap[idParam]
-  const MALId = Number.parseInt(id)
+  if (!id || !id.mal_id) {
+    res.status(404).json({ error: `No anime data found with Bangumi ID: ${idParam}` })
+    return
+  }
+  const MALId = Number.parseInt(id.mal_id)
   try {
     const animeDetails = await getAnimeDetails(MALId)
     if (animeDetails) {
       res.json(animeDetails)
+    }
+    else {
+      res.status(404).json({ error: 'Anime details not found' })
     }
   }
   catch (error) {
