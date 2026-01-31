@@ -8,8 +8,11 @@
     "moduleResolution": "bundler",
     "types": ["node"],
     "allowImportingTsExtensions": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noEmit": false,
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "skipLibCheck": true
   },
   "include": [
     "**/*.ts",
