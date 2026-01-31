@@ -200,6 +200,22 @@ export async function refreshAccessToken(): Promise<void> {
   }
   else {
     console.error('Error refreshing access token:', data)
-    throw new Error(`Failed to refresh access token: ${data.error || 'Unknown error'}`)
+    const error = new Error(`Failed to refresh access token: ${data.error || 'Unknown error'}`)
+
+    // If refresh fails, prompt user to update tokens manually
+    const separator = '='.repeat(60)
+    console.warn(`\n${separator}`)
+    console.warn('⚠️  AUTOMATIC TOKEN REFRESH FAILED')
+    console.warn(separator)
+    console.warn('Your MyAnimeList access token and refresh token have expired.')
+    console.warn('Please update your tokens and restart the server:')
+    console.warn('')
+    console.warn('1. Get new tokens from: https://myanimelist.net/apiconfig')
+    console.warn('2. Update MAL_ACCESS_TOKEN in your .env file')
+    console.warn('3. Update MAL_REFRESH_TOKEN in your .env file')
+    console.warn('4. Restart the server')
+    console.warn(`${separator}\n`)
+
+    throw error
   }
 }
