@@ -26,7 +26,7 @@
     "rollup": "^4.34.8",
     "rollup-plugin-import-css": "^3.5.8",
     "rollup-plugin-userscript-metadata": "^2.0.1",
-    "simple-git-hooks": "^2.11.1"
+    "simple-git-hooks": "^2.13.1"
   },
   "simple-git-hooks": {
     "pre-commit": "npm run lint-staged"
