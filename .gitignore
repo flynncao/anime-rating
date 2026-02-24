@@ -135,3 +135,5 @@ out
 # build cache 
 build/
 dist/
+
+/plugins/
